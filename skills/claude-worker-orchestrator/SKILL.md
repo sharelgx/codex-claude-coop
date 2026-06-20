@@ -24,18 +24,58 @@ Use `tmp/agent_loop/<slug>-<timestamp>/` inside the active project unless the us
 
 Read `references/protocol.md` before starting a new loop or diagnosing an existing loop.
 
+## Available scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/claude_worker_round.sh <loop-dir> [--timeout N] [--proxy] [--dry-run]` | Launch one Claude worker round |
+| `scripts/coop_status.sh <loop-dir>` | Print comprehensive loop status report |
+| `scripts/coop_prepare_round.sh <slug> [project-root]` | Initialize a new loop directory with task template |
+| `scripts/coop_watch.sh <loop-dir>` | Real-time loop monitoring (5s refresh) |
+
 ## Standard workflow
 
-1. Create or reuse a loop directory.
+1. Create a loop directory:
+   ```bash
+   /Users/liulaoshi/.codex/skills/claude-worker-orchestrator/scripts/coop_prepare_round.sh <task-slug>
+   ```
+
 2. Write `current_task.md` with a precise Chinese task for Claude.
+
 3. Require Claude to write `claude_status.json`, `claude_result.md`, and `changed_files.txt` before exiting.
-4. Launch Claude with `scripts/claude_worker_round.sh` when Codex can run the command directly.
-5. If Codex cannot launch into the visible right-side terminal, give the user the exact command to paste there; continue by reading the files after it runs.
-6. Watch for completion by checking `claude_status.json`, the Claude process, and recent file modifications.
-7. Review the implementation yourself. Read only the necessary changed files and relevant reports.
-8. Run only targeted validation that is necessary for the task or explicitly requested by the user.
+
+4. Launch Claude with the worker script. Two modes:
+
+   **A. Background mode** — Codex runs it directly:
+   ```bash
+   /Users/liulaoshi/.codex/skills/claude-worker-orchestrator/scripts/claude_worker_round.sh <loop-dir>
+   ```
+
+   **B. Right-side visible mode** (recommended) — Codex generates the command, user pastes it in the right terminal:
+   ```bash
+   # Tell the user to run this in their right-side terminal:
+   /Users/liulaoshi/.codex/skills/claude-worker-orchestrator/scripts/claude_worker_round.sh <loop-dir>
+   ```
+
+5. Monitor progress using:
+   ```bash
+   /Users/liulaoshi/.codex/skills/claude-worker-orchestrator/scripts/coop_status.sh <loop-dir>
+   ```
+   or in another terminal:
+   ```bash
+   /Users/liulaoshi/.codex/skills/claude-worker-orchestrator/scripts/coop_watch.sh <loop-dir>
+   ```
+
+6. Watch for completion by checking `claude_status.json` (status becomes `done`/`failed`/`blocked`).
+
+7. Review the implementation: read changed files and relevant reports.
+
+8. Run only targeted validation that is necessary for the task or explicitly requested.
+
 9. Write `codex_review.md`.
+
 10. If issues remain, write `next_task.md`, promote it to `current_task.md`, and start another Claude round.
+
 11. Stop only when acceptance criteria pass or when the blocker is concrete and needs user/external action.
 
 ## Claude task requirements
@@ -59,29 +99,33 @@ A Claude round is not complete just because the terminal printed a success sente
 - `claude_status.json` exists and status is `done`, `blocked`, or `failed`.
 - `claude_result.md` exists.
 - `changed_files.txt` exists, even if empty.
-- The Claude worker process for this round has exited or clearly returned to shell prompt.
+- The Claude worker process for this round has exited.
+
+The worker script has a **status fallback mechanism**: if Claude exits but status is still `running`, the script automatically writes `failed` (or `done` if exit code was 0).
 
 ## Review policy
 
 - If Claude changed code, inspect the changed files before trusting it.
-- If Claude generated a report, inspect the report JSON/MD/HTML source enough to confirm it is real and relevant.
+- If Claude generated a report, inspect the report source enough to confirm it is real and relevant.
 - If Claude claims validation passed, prefer checking the saved command output or rerunning a narrow validation only when needed.
 - If Claude introduces broad unrelated changes, stop and ask the user before proceeding.
 
 ## Right-side visibility
 
-If the user wants to watch Claude in the right-side terminal, prefer a foreground command that also logs output:
+If the user wants to watch Claude in the right-side terminal, give them the exact command to paste:
 
 ```bash
 /Users/liulaoshi/.codex/skills/claude-worker-orchestrator/scripts/claude_worker_round.sh tmp/agent_loop/<loop-id>
 ```
 
-If Codex cannot write into that terminal directly, tell the user to paste the command there. Codex can still monitor the loop directory afterward.
+Codex can then monitor the loop directory via `coop_status.sh` or by reading the files directly.
 
 ## Failure handling
 
-- Network/auth error: summarize exact error and do not rewrite project code to work around provider login failures.
-- Permission prompt: explain which command caused it and whether it can be avoided with a safer command.
-- Claude partial work: review partial changed files, write a smaller next task, and rerun.
-- Ambiguous task: Codex should narrow the task before dispatching Claude.
-
+- **Network/auth error**: summarize exact error, do not rewrite project code to work around provider login failures. Consider `--proxy` flag.
+- **Permission prompt**: explain which command caused it and whether it can be avoided.
+- **Claude partial work**: review partial changed files, write a smaller next task, and rerun.
+- **Ambiguous task**: Codex should narrow the task before dispatching Claude.
+- **Timeout**: default 1800s (30 min). Use `--timeout` for longer tasks. Script auto-writes `failed` on timeout.
+- **No output**: `claude -p` may buffer internally. Check if process is alive and log file is growing. Consider using `coop_watch.sh` in another terminal.
+- **Status stuck at running**: if Claude process exited, the script should have auto-fixed it. If the script was killed externally, manually update `claude_status.json`.
