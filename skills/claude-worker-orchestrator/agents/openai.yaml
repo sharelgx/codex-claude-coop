@@ -1,4 +1,4 @@
 interface:
   display_name: "Claude Worker 调度器"
   short_description: "把 Claude Code CLI 作为可观察 worker 调度开发，并由 Codex 审查形成闭环。"
-  default_prompt: "调度 Claude 开发这个需求，并在它完成后由 Codex 检查、回归、继续派下一轮任务直到闭环。"
+  default_prompt: "用 coop 技能工作：调度 Claude 开发这个需求，并在它完成后由 Codex 检查、回归、继续派下一轮任务直到闭环。"

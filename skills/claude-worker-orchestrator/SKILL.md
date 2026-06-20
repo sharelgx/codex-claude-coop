@@ -1,6 +1,6 @@
 ---
 name: claude-worker-orchestrator
-description: "Use when the user wants Codex to orchestrate Claude Code CLI as a visible development worker: dispatch coding tasks to Claude, let the user watch Claude working in a terminal, read Claude's status/log/result files, review changed files, run targeted validation when appropriate, write the next task, and repeat a Codex review to Claude worker loop until the project task is complete or blocked. Trigger on requests such as 调度Claude开发, 让Claude干活我来/你来检查, Claude完成后你接手, 多Agent闭环, 右侧看Claude工作, 自动派任务给Claude, or building a Codex-Claude development loop."
+description: "Use when the user wants Codex to orchestrate Claude Code CLI as a visible development worker: dispatch coding tasks to Claude, let the user watch Claude working in a terminal, read Claude's status/log/result files, review changed files, run targeted validation when appropriate, write the next task, and repeat a Codex review to Claude worker loop until the project task is complete or blocked. Primary trigger phrase: 用 coop 技能工作. Also trigger on requests such as 调度Claude开发, 让Claude干活我来/你来检查, Claude完成后你接手, 多Agent闭环, 右侧看Claude工作, 自动派任务给Claude, or building a Codex-Claude development loop."
 ---
 
 # Claude Worker Orchestrator
